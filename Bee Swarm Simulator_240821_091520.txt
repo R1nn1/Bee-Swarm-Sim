@@ -1909,7 +1909,7 @@ BeesMasTab:CreateToggle({
     Info = {
         Title = 'Auto Use Gingerbread House',
         Image = '12735851647',
-        Description = 'Automatically uses the Gingerbread House every 10 minutes.',
+        Description = 'Automatically uses the Gingerbread House',
     },
     CurrentValue = false,
     Flag = "AutoUseGingerbreadHouse",
@@ -2003,7 +2003,7 @@ BeesMasTab:CreateToggle({
     Info = {
         Title = 'Auto Do Honey Wreath',
         Image = '12735851647',
-        Description = 'Automatically uses the Honey Wreath and collects specific colored Honey tokens every 30 minutes.',
+        Description = 'Automatically uses the Honey Wreath',
     },
     CurrentValue = false,
     Flag = "AutoDoHoneyWreath",
@@ -2036,7 +2036,7 @@ BeesMasTab:CreateToggle({
     Info = {
         Title = 'Auto BeesMas Feast',
         Image = '12735851647',
-        Description = 'Automatically uses the Beesmas Feast and collects any nearby tokens every 1 hour and 30 minutes.',
+        Description = 'Automatically does Beesmas Feast',
     },
     CurrentValue = false,
     Flag = "AutoBeesmasFeast",
