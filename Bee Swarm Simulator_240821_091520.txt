@@ -2063,3 +2063,25 @@ BeesMasTab:CreateToggle({
         end
     end,
 })
+
+MiscTab:CreateButton({
+    Name = "Remove Gates And Fenches",
+    Info = {
+        Title = 'Remove Gates and Fenches',
+        Description = 'Removes Every Gate and Fences in the game',
+    },
+    Interact = 'Changable',
+    Callback = function()
+        print('Pressed')
+
+        local fences = game.Workspace:WaitForChild("Map"):WaitForChild("Fences")
+        for _, item in pairs(fences:GetChildren()) do
+            item:Destroy()
+        end
+
+        local gates = game.Workspace:WaitForChild("Map"):WaitForChild("Gates")
+        for _, item in pairs(gates:GetChildren()) do
+            item:Destroy()
+        end
+    end,
+})
