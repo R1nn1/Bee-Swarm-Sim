@@ -2079,7 +2079,7 @@ MiscTab:CreateButton({
             item:Destroy()
         end
 
-        local gates = game.Workspace:WaitForChild("Map"):WaitForChild("Gates")
+        local gates = game.Workspace:WaitForChild("Gates")
         for _, item in pairs(gates:GetChildren()) do
             item:Destroy()
         end
