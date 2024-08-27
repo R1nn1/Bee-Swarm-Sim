@@ -2085,3 +2085,78 @@ MiscTab:CreateButton({
         end
     end,
 })
+
+local selectedItem = "Glitter"
+local donationAmount = 1
+local donationRunning = false
+local autoDonateConnection
+
+local function donateToWindShrine()
+    local args = {
+        [1] = selectedItem,
+        [2] = donationAmount
+    }
+    game:GetService("ReplicatedStorage").Events.WindShrineDonation:InvokeServer(unpack(args))
+    wait(1) -- Wait for 1 second before triggering
+    game:GetService("ReplicatedStorage").Events.WindShrineTrigger:FireServer()
+end
+
+Tab:CreateToggle({
+    Name = "Auto Donate To WindShrine",
+    Info = {
+        Title = 'Auto Donate To WindShrine',
+        Image = '12735851647',
+        Description = 'Automatically donates the selected item in the dropdown below to the windshrine',
+    },
+    CurrentValue = false,
+    Flag = "AutoDonateToWind",
+    Callback = function(Value)
+        donationRunning = Value
+        if donationRunning then
+            autoDonateConnection = game:GetService("RunService").Stepped:Connect(function()
+                if donationRunning then
+                    donateToWindShrine()
+                else
+                    autoDonateConnection:Disconnect()
+                end
+                wait(5)
+            end)
+        else
+            if autoDonateConnection then
+                autoDonateConnection:Disconnect()
+            end
+        end
+    end,
+})
+
+Tab:CreateDropdown({
+    Name = "Item To Donate",
+    Options = {"Glitter", "Pineapple", "GiftedSilver", "Stinger", "BlueExtract", "Star", "SunflowerSeed", "Coconut", 
+               "CausticWax", "Diamond", "Neonberry", "StarJelly", "FestiveBean", "Mythic", "Turpentine", "Gold",
+               "SmoothDice", "JellyBeans", "SoftWax", "HoneyBee", "MagicBean", "GiftedGold", "Enzymes", "Bitterberry",
+               "LoadedDice", "Strawberry", "Ticket", "Silver", "Whirligig", "SpiritPetal", "HardWax", "DebugWax",
+               "NightBell", "FieldDice", "TropicalDrink", "AtomicTreat", "RoyalJelly", "MythicJelly", "Basic", 
+               "RedExtract", "Glue", "MarshmallowBee", "CloudVial", "MoonCharm", "StarTreat", "Blueberry", "Oil",
+               "Treat", "Gumdrops", "GiftedDiamond", "Honeysuckle", "AntPass", "Box-O-Frogs", "Micro-Converter",
+               "GiftedMythic", "PurplePotion", "SwirledWax"}, -- Added new options
+    CurrentOption = "Glitter",
+    MultiSelection = false,
+    Flag = "Dropdown2",
+    Callback = function(Option)
+        selectedItem = Option
+    end,
+})
+
+Tab:CreateInput({
+    Name = "Amount To Donate",
+    PlaceholderText = "The Amount Of Items To Donate to windshrine",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        local amount = tonumber(Text)
+        if amount then
+            donationAmount = amount
+        else
+            donationAmount = 1
+        end
+    end,
+})
