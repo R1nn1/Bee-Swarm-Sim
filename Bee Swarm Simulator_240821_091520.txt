@@ -105,19 +105,17 @@ local collectiblesFolder = game.Workspace:WaitForChild("Collectibles")
 local cloudsFolder = game.Workspace:WaitForChild("Clouds")
 local monstersFolder = game.Workspace:WaitForChild("Monsters")
 
--- CoreStats
 local coreStats = player:WaitForChild("CoreStats")
 local capacity = coreStats:WaitForChild("Capacity")
 local pollen = coreStats:WaitForChild("Pollen")
 
--- Control Variables
 local autoFarmEnabled = false
 local useSprinklersEnabled = true
 local ignoreHoneyTokensEnabled = false
 local farmUnderCloudsEnabled = false
 local hasPlacedSprinklers = false
-
--- Field Positions
+local tweenSpeed = 80
+local collectibleRange = 40
 local fieldPositions = {
     ["SunFlower Field"] = Vector3.new(-209.692, 4.405, 161.513),
     ["Dandelion Field"] = Vector3.new(-46.345, 4.405, 222.636),
@@ -131,12 +129,15 @@ local fieldPositions = {
     ["Pinapple Field"] = Vector3.new(255.599, 68.474, -211.378),
     ["Cactus Field"] = Vector3.new(-184.026, 68.474, -103.472),
     ["Pumpkin Field"] = Vector3.new(-187.553, 68.474, -189.296),
-    ["Pine Tree Field"] = Vector3.new(-326.483, 68.474, -189.874)
+    ["Pine Tree Field"] = Vector3.new(-326.483, 68.474, -189.874),
+    ["Mountain Top Field"] = Vector3.new(85.72864532470703, 176.4743194580078, -159.75270080566406),
+    ["Coconut Field"] = Vector3.new(-263.2635192871094, 71.92432403564453, 461.55902099609375),
+    ["Pepper Field"] = Vector3.new(-504.0063171386719, 123.67584228515625, 535.453125)
 }
 
 local function tweenToPosition(position)
     local distance = (position - humanoidRootPart.Position).Magnitude
-    local tweenInfo = TweenInfo.new(distance / 80, Enum.EasingStyle.Linear)
+    local tweenInfo = TweenInfo.new(distance / tweenSpeed, Enum.EasingStyle.Linear)
     local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(position)})
     tween:Play()
     tween.Completed:Wait()
@@ -165,15 +166,14 @@ end
 local function farmCollectibles()
     while autoFarmEnabled do
         for _, collectible in pairs(collectiblesFolder:GetChildren()) do
-            if (collectible.Position - humanoidRootPart.Position).Magnitude <= 40 then
+            if (collectible.Position - humanoidRootPart.Position).Magnitude <= collectibleRange then
                 if ignoreHoneyTokensEnabled and collectible.Color == Color3.fromRGB(223, 187, 27) then
-                    -- Ignore honey tokens
                 else
                     walkToPosition(collectible.Position)
                 end
             end
         end
-        wait(0.1) -- Added to make sure it doesn't break when the player moves by themselves
+        wait(0.1)
     end
 end
 
@@ -253,7 +253,6 @@ local function monitorPollen()
 
             tweenToPosition(targetPosition)
 
-            -- Run the ToggleHoneyMaking command after reaching the target position
             local args = {
                 [1] = "ToggleHoneyMaking"
             }
@@ -263,9 +262,8 @@ local function monitorPollen()
                 wait(1)
             until pollen.Value == 0
 
-            wait(5) -- Wait for 5 seconds before returning to the field
+            wait(5)
 
-            -- Tween back to the field position and start farming collectibles
             local fieldPosition = fieldPositions[selectedField]
             if fieldPosition then
                 tweenToPosition(fieldPosition)
@@ -306,20 +304,60 @@ Tab:CreateToggle({
 Tab:CreateDropdown({
     Name = "Auto Farm Field",
     Options = {
-        "SunFlower Field", "Dandelion Field", "Mushroom Field",
-        "Clover Field", "Blue Flower", "Bamboo Field",
-        "Spider Field", "Strawberry Field", "Stump Field",
-        "Pinapple Field", "Cactus Field", "Pumpkin Field",
-        "Pine Tree Field"
+        "SunFlower Field", "Dandelion Field", "Mushroom Field", "Clover Field", "Blue Flower", "Bamboo Field",
+        "Spider Field", "Strawberry Field", "Stump Field", "Pinapple Field", "Cactus Field", "Pumpkin Field",
+        "Pine Tree Field", "Mountain Top Field", "Coconut Field", "Pepper Field"
     },
     CurrentOption = "SunFlower Field",
-    MultiSelection = false,
-    Flag = "AutoFarmFieldDropp",
+    Flag = "AutoFarmDropdown",
     Callback = function(Option)
         selectedField = Option
-        print(Option)
     end,
 })
+
+Tab:CreateSlider({
+    Name = "Token Range",
+    Range = {1, 100},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = collectibleRange,
+    Flag = "CollectibleRangeSlider",
+    Callback = function(Value)
+        collectibleRange = Value
+    end,
+})
+
+local rangePart
+
+Tab:CreateToggle({
+    Name = "Token Range Visualizer",
+    CurrentValue = false,
+    Flag = "ShowCollectiblesRangeToggle",
+    Callback = function(Value)
+        if Value then
+            rangePart = Instance.new("Part")
+            rangePart.Size = Vector3.new(collectibleRange * 2, 1, collectibleRange * 2)
+            rangePart.Color = Color3.fromRGB(255, 0, 0)
+            rangePart.Transparency = 0.5
+            rangePart.Anchored = true
+            rangePart.CanCollide = false
+            rangePart.Parent = workspace
+        else
+            if rangePart then
+                rangePart:Destroy()
+                rangePart = nil
+            end
+        end
+    end,
+})
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if rangePart and humanoidRootPart then
+        rangePart.Size = Vector3.new(collectibleRange * 2, 1, collectibleRange * 2)
+        rangePart.CFrame = humanoidRootPart.CFrame
+    end
+end)
+
 
 Tab:CreateToggle({
     Name = "Use Sprinklers",
@@ -328,7 +366,7 @@ Tab:CreateToggle({
         Image = '12735851647',
         Description = 'Uses Sprinklers When Auto Farming',
     },
-    CurrentValue = false,
+    CurrentValue = true,
     Flag = "UseSprinklersToggle",
     Callback = function(Value)
         useSprinklersEnabled = Value
