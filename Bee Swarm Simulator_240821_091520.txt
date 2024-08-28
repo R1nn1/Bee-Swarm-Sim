@@ -2198,3 +2198,123 @@ Tab:CreateInput({
         end
     end,
 })
+
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+local twspeed = 60
+local targetPosition1 = Vector3.new(176.94158935546875, 4.547196865081787, 157.11050415039062)
+local targetPosition2 = Vector3.new(109.0298843383789, 4.547195911407471, 253.4846649169922)
+local commandoPosition = Vector3.new(495.7022399902344, 46.98208236694336, 164.57131958007812)
+local tweenInfo = TweenInfo.new((HumanoidRootPart.Position - targetPosition1).Magnitude / twspeed, Enum.EasingStyle.Linear)
+local commandoTweenInfo = TweenInfo.new((HumanoidRootPart.Position - commandoPosition).Magnitude / twspeed, Enum.EasingStyle.Linear)
+local timerDuration = 234000
+local remainingTime = timerDuration
+local timerRunning = false
+local toggleActive = false
+local commandoActive = false
+local commandoTween
+
+local function saveTime()
+    Window:SetValue("TimerRemainingTime", remainingTime)
+end
+
+local function resumeTime()
+    remainingTime = Window:GetValue("TimerRemainingTime") or timerDuration
+end
+
+local function moveToPosition()
+    local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPosition1)})
+    tween:Play()
+    tween.Completed:Wait()
+
+    Humanoid:MoveTo(targetPosition2)
+    Humanoid.MoveToFinished:Wait()
+end
+
+local function startTimer()
+    timerRunning = true
+    while remainingTime > 0 and toggleActive do
+        wait(1)
+        remainingTime -= 1
+        saveTime()
+    end
+
+    if remainingTime <= 0 and toggleActive then
+        remainingTime = timerDuration
+        moveToPosition()
+        startTimer()
+    end
+end
+
+local function stopCommandoFollow()
+    if commandoTween then
+        commandoTween:Cancel()
+        commandoTween = nil
+    end
+end
+
+local function startCommandoFollow()
+    local function updateCommandoPosition()
+        if not commandoActive then return end
+        local monsters = workspace:FindFirstChild("Monsters")
+        if monsters then
+            for _, monster in pairs(monsters:GetChildren()) do
+                if string.find(monster.Name, "Commando") then
+                    local commandoPos = monster.Position + Vector3.new(0, 6, 0)
+                    local tweenInfo = TweenInfo.new((HumanoidRootPart.Position - commandoPos).Magnitude / twspeed, Enum.EasingStyle.Linear)
+                    commandoTween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(commandoPos)})
+                    commandoTween:Play()
+                    commandoTween.Completed:Connect(updateCommandoPosition)
+                    return
+                end
+            end
+        end
+        wait(0.1)
+        updateCommandoPosition()
+    end
+
+    local tween = TweenService:Create(HumanoidRootPart, commandoTweenInfo, {CFrame = CFrame.new(commandoPosition)})
+    tween:Play()
+    tween.Completed:Wait()
+    updateCommandoPosition()
+end
+
+CombatTab:CreateToggle({
+    Name = "Auto Kill King Beetle",
+    CurrentValue = false,
+    Flag = "AutoKillKing",
+    Callback = function(Value)
+        toggleActive = Value
+        if Value then
+            resumeTime()
+            moveToPosition()
+            if not timerRunning then
+                startTimer()
+            end
+        else
+            saveTime()
+            timerRunning = false
+        end
+    end,
+})
+
+CombatTab:CreateToggle({
+    Name = "Auto Kill Commando Chick",
+    CurrentValue = false,
+    Flag = "AutoKillChick",
+    Callback = function(Value)
+        commandoActive = Value
+        if Value then
+            startCommandoFollow()
+        else
+            stopCommandoFollow()
+        end
+    end,
+})
+
