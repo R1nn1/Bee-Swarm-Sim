@@ -364,7 +364,7 @@ Tab:CreateToggle({
     Info = {
         Title = 'Use Sprinklers',
         Image = '12735851647',
-        Description = 'Uses Sprinklers When Auto Farming',
+        Description = 'Makes The Auto Use Sprinklers While Auto Farming',
     },
     CurrentValue = true,
     Flag = "UseSprinklersToggle",
@@ -394,7 +394,7 @@ Tab:CreateToggle({
     Info = {
         Title = 'Farm Under Clouds',
         Image = '12735851647',
-        Description = 'Auto Farmers Under Clouds Only',
+        Description = 'Makes The Auto Farm Also Farm Under Clouds For the Pollen boost',
     },
     CurrentValue = false,
     Flag = "FarmUnderCloudsToggle",
@@ -1663,6 +1663,180 @@ function reduceLag()
     
     print('Lag')
 end
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local HiveTab = Window:CreateTab("Hive Tab", 4483362458)
+
+local beePosTexts = {}
+local autoGiftedBasicBeeRunning = false
+local xPosInput, yPosInput = 2, 2
+local giftedMethod = "Basic Eggs"
+
+local function showBeePositions()
+    for _, text in pairs(beePosTexts) do
+        text:Destroy()
+    end
+    table.clear(beePosTexts)
+
+    local honeycombs = game:GetService("Workspace"):FindFirstChild("Honeycombs")
+    if not honeycombs then 
+        print("Honeycombs not found in Workspace.")
+        return 
+    end
+
+    for _, hive in ipairs(honeycombs:GetChildren()) do
+        if string.match(hive.Name, "^Hive%d+$") then
+            local cells = hive:FindFirstChild("Cells")
+            if cells then
+                for _, cellContainer in ipairs(cells:GetChildren()) do
+                    local cellX = cellContainer:FindFirstChild("CellX")
+                    local cellY = cellContainer:FindFirstChild("CellY")
+
+                    if cellX and cellY then
+                        local billboardGui = Instance.new("BillboardGui")
+                        billboardGui.Adornee = cellContainer
+                        billboardGui.Size = UDim2.new(0, 100, 0, 50)
+                        billboardGui.AlwaysOnTop = true
+                        billboardGui.Parent = cellContainer
+
+                        local textLabel = Instance.new("TextLabel")
+                        textLabel.Size = UDim2.new(1, 0, 1, 0)
+                        textLabel.BackgroundTransparency = 1
+                        textLabel.Text = "X: " .. tostring(cellX.Value) .. " Y: " .. tostring(cellY.Value)
+                        textLabel.TextColor3 = Color3.new(1, 1, 1)
+                        textLabel.TextStrokeTransparency = 0
+                        textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                        textLabel.Parent = billboardGui
+
+                        table.insert(beePosTexts, billboardGui)
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function hideBeePositions()
+    for _, text in pairs(beePosTexts) do
+        text:Destroy()
+    end
+    table.clear(beePosTexts)
+end
+
+HiveTab:CreateToggle({
+    Name = "Show Bee Positions",
+    Info = {
+        Title = 'Show Bee Positions',
+        Image = '12735851647',
+        Description = 'Shows the positions of your bees so you know the x and y pos put numbers only in the text inputs'
+    },
+    CurrentValue = false,
+    Flag = "ShowBeePos",
+    Callback = function(Value)
+        if Value then
+            showBeePositions()
+        else
+            hideBeePositions()
+        end
+    end,
+})
+
+HiveTab:CreateDropdown({
+    Name = "Auto Gifted Basic Bee Method",
+    Options = {"Royal Jelly", "Basic Eggs"},
+    CurrentOption = "Basic Eggs",
+    MultiSelection = false,
+    Flag = "GiftedBasicMethod",
+    Callback = function(Option)
+        giftedMethod = Option
+        print("Selected Method: " .. Option)
+    end,
+})
+
+HiveTab:CreateInput({
+    Name = "X Pos For Gifted Basic",
+    PlaceholderText = "The X Pos the auto gifted basic bee should do it on",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        xPosInput = tonumber(Text) or 2
+        print("X Position set to: " .. tostring(xPosInput))
+    end,
+})
+
+HiveTab:CreateInput({
+    Name = "Y Pos For Gifted Basic",
+    PlaceholderText = "The Y Pos the Auto Gifted Basic Bee Should do it at",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        yPosInput = tonumber(Text) or 2
+        print("Y Position set to: " .. tostring(yPosInput))
+    end,
+})
+
+local function startAutoGiftedBasicBee()
+    autoGiftedBasicBeeRunning = true
+    while autoGiftedBasicBeeRunning do
+        local honeycombValue = player:FindFirstChild("Honeycomb") and player.Honeycomb.Value
+        local hive = game:GetService("Workspace"):FindFirstChild("Honeycombs"):FindFirstChild(honeycombValue)
+
+        if hive then
+            local cells = hive:FindFirstChild("Cells")
+            if cells then
+                for _, cell in ipairs(cells:GetChildren()) do
+                    local giftedCell = cell:FindFirstChild("GiftedCell")
+                    local cellType = cell:FindFirstChild("CellType")
+                    if giftedCell and cellType and cellType.Value == "BasicBee" then
+                        print("Gifted Basic Bee cell found. Stopping auto gifted basic bee.")
+                        autoGiftedBasicBeeRunning = false
+                        return
+                    end
+                end
+            end
+        end
+
+        local args
+        if giftedMethod == "Basic Eggs" then
+            args = {
+                [1] = xPosInput,
+                [2] = yPosInput,
+                [3] = "Basic",
+                [4] = 1,
+                [5] = false
+            }
+        else
+            args = {
+                [1] = xPosInput,
+                [2] = yPosInput,
+                [3] = "RoyalJelly",
+                [4] = 1,
+                [5] = false
+            }
+        end
+
+        game:GetService("ReplicatedStorage").Events.ConstructHiveCellFromEgg:InvokeServer(unpack(args))
+        wait(1.5)
+    end
+end
+
+HiveTab:CreateToggle({
+    Name = "Start Auto Gifted Basic Bee",
+    Info = {
+        Title = 'Start Auto Gifted Basic Bee',
+        Image = '12735851647',
+        Description = 'Starts the auto gifted basic this is op also stops when you get it so no need to turn off the toggle'
+    },
+    CurrentValue = false,
+    Flag = "StartAutoGiftedBasiccc",
+    Callback = function(Value)
+        if Value then
+            startAutoGiftedBasicBee()
+        else
+            autoGiftedBasicBeeRunning = false
+        end
+    end,
+})
 
 -- Button setup
 MiscTab:CreateButton({
