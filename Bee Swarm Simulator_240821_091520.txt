@@ -2492,3 +2492,123 @@ CombatTab:CreateToggle({
     end,
 })
 
+local ArrayField = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hosvile/Refinement/main/MC%3AArrayfield%20Library"))()
+
+local Window = ArrayField:CreateWindow({
+    Name = "Rinns Hub",
+    LoadingTitle = "Rinns Hub",
+    LoadingSubtitle = "Code by Rinn Ui by Sirius Ui remake by Hosvile",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "RinnsHubConfigs",
+        FileName = "RinnsHub"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "Mt9F5nc8Tg",
+        RememberJoins = false
+    },
+    KeySystem = false
+})
+
+local Tab = Window:CreateTab("Tab Example", 4483362458)
+
+local MonsterEsp = false
+local MonstersEsp = {}
+local currentColor = Color3.fromRGB(150, 50, 200)  -- Default bluish-red color
+
+local function updateESP()
+    for _, esp in pairs(MonstersEsp) do
+        esp.Line:Remove()
+        esp.Text:Remove()
+    end
+    MonstersEsp = {}
+
+    if not MonsterEsp then return end
+
+    local camera = workspace.CurrentCamera
+
+    for _, monster in pairs(workspace.Monsters:GetChildren()) do
+        if monster:IsA("Model") and monster:FindFirstChild("HumanoidRootPart") then
+            local monsterHRP = monster.HumanoidRootPart
+
+            local line = Drawing.new("Line")
+            line.Color = currentColor
+            line.Thickness = 2
+            line.Transparency = 1
+            line.Visible = true
+
+            local text = Drawing.new("Text")
+            text.Text = monster.Name
+            text.Size = 25 
+            text.Color = Color3.fromRGB(255, 255, 255)
+            text.Outline = true
+            text.OutlineColor = Color3.fromRGB(0, 0, 0)
+            text.Center = true
+            text.Visible = true
+
+            table.insert(MonstersEsp, {Line = line, Text = text, Monster = monsterHRP})
+        end
+    end
+end
+
+local function updateAllESP()
+    local camera = workspace.CurrentCamera
+
+    for _, esp in pairs(MonstersEsp) do
+        local monsterHRP = esp.Monster
+
+        if monsterHRP.Parent == nil then
+            esp.Line.Visible = false
+            esp.Text.Visible = false
+        else
+            local monsterPosition = monsterHRP.Position
+            local screenPosition, onScreen = camera:WorldToViewportPoint(monsterPosition)
+            local textPosition, onScreenText = camera:WorldToViewportPoint(monsterPosition + Vector3.new(0, 8, 0))
+
+            if onScreen and onScreenText then
+                esp.Line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                esp.Line.To = Vector2.new(screenPosition.X, screenPosition.Y)
+                esp.Line.Visible = true
+
+                esp.Text.Position = Vector2.new(textPosition.X, textPosition.Y)
+                esp.Text.Visible = true
+            else
+                esp.Line.Visible = false
+                esp.Text.Visible = false
+            end
+        end
+    end
+end
+
+game:GetService("RunService").Heartbeat:Connect(updateAllESP)
+
+EspTab:CreateToggle({
+    Name = "Esp Monsters",
+    Info = {
+        Title = 'Esp Monsters',
+        Image = '12735851647',
+        Description = 'Shows You where every spawned in monster is',
+    },
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        MonsterEsp = Value
+        updateESP()
+    end,
+})
+
+local ColorPicker = EspTab:CreateColorPicker({
+    Name = "Monster Esp Color",
+    Color = currentColor,
+    Flag = "ColorPicker1",
+    Callback = function(Value)
+        currentColor = Value
+        for _, esp in pairs(MonstersEsp) do
+            esp.Line.Color = currentColor
+        end
+    end
+})
+
+workspace.Monsters.ChildAdded:Connect(updateESP)
+workspace.Monsters.ChildRemoved:Connect(updateESP)
